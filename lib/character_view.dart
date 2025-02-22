@@ -1,7 +1,7 @@
 import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_3d_controller/flutter_3d_controller.dart';
+import 'package:threed/monster_view.dart';
 
 class CharacterViewer extends StatefulWidget {
   const CharacterViewer({super.key});
@@ -14,6 +14,7 @@ class CharacterViewerState extends State<CharacterViewer> {
   final Flutter3DController _femaleController = Flutter3DController();
   final Flutter3DController _maleController = Flutter3DController();
   bool _isFemaleSelected = true;
+  bool _isAnimating = false;
 
   // Store initial camera positions
   final Map<String, List<double>> _initialCameraSettings = {
@@ -33,6 +34,11 @@ class CharacterViewerState extends State<CharacterViewer> {
   set _currentTheta(double value) =>
       _isFemaleSelected ? _femaleTheta = value : _maleTheta = value;
 
+  final Map<String, List<String>> _animations = {
+    'female': ['Talk', 'fight', 'jump'],
+    'male': ['Talk.001', 'Fight', 'Jump'],
+  };
+
   void _rotateCharacter(bool isLeft) {
     _currentTheta = isLeft ? _currentTheta - 10 : _currentTheta + 10;
     _currentController.setCameraOrbit(_currentTheta, 90, 200);
@@ -48,24 +54,64 @@ class CharacterViewerState extends State<CharacterViewer> {
     _currentController.pauseAnimation();
   }
 
-  Future<void> loadAndPlayAnimation(Flutter3DController controller) async {
-    try {
-      final animations = await controller.getAvailableAnimations();
-      log(animations.toString());
+  void _stopAllAnimations() {
+    _femaleController.resetAnimation();
+    _femaleController.pauseAnimation();
+    _maleController.resetAnimation();
+    _maleController.pauseAnimation();
+    _isAnimating = false;
+  }
 
-      if (animations.isNotEmpty) {
-        controller.playAnimation(animationName: animations.first);
-        await Future.delayed(const Duration(seconds: 10));
-        controller.resetAnimation();
-        controller.pauseAnimation();
-        //controller.setCameraOrbit(50, 90, 200);
-        // controller.setCameraTarget(0.2, 0.8, 0);
-      } else {
-        debugPrint('No animations found in the model.');
-      }
-    } catch (e) {
-      debugPrint('Error loading animation: $e');
+  Future<void> _playAnimation(String animName, {bool bothModels = false}) async {
+    if (_isAnimating) {
+      _stopAllAnimations();
+      await Future.delayed(const Duration(milliseconds: 100)); // Small delay to ensure clean transition
     }
+
+    setState(() => _isAnimating = true);
+
+    try {
+      if (bothModels) {
+        switch (animName.toLowerCase()) {
+          case 'talk':
+            _femaleController.playAnimation(animationName: 'Talk');
+            _maleController.playAnimation(animationName: 'Talk.001');
+            break;
+          case 'fight':
+            _femaleController.playAnimation(animationName: 'fight');
+            _maleController.playAnimation(animationName: 'Fight');
+            break;
+        }
+      } else {
+        final animations = _isFemaleSelected ? _animations['female']! : _animations['male']!;
+        final animationName = animations.firstWhere(
+          (a) => a.toLowerCase().contains(animName.toLowerCase())
+        );
+        _currentController.playAnimation(animationName: animationName);
+      }
+
+      await Future.delayed(const Duration(seconds: 5));
+      _stopAllAnimations();
+    } catch (e) {
+      debugPrint('Error playing animation: $e');
+      _stopAllAnimations();
+    }
+  }
+
+  Widget _buildAnimationButton(String label, String animation, {Color? color}) {
+    return ElevatedButton(
+      onPressed: () => _playAnimation(animation),
+      style: color != null ? ElevatedButton.styleFrom(backgroundColor: color) : null,
+      child: Text('$label ${_isFemaleSelected ? "Female" : "Male"}'),
+    );
+  }
+
+  Widget _buildDualAnimationButton(String label, String animation, Color color) {
+    return ElevatedButton(
+      onPressed: () => _playAnimation(animation, bothModels: true),
+      style: ElevatedButton.styleFrom(backgroundColor: color),
+      child: Text(label),
+    );
   }
 
   @override
@@ -73,7 +119,27 @@ class CharacterViewerState extends State<CharacterViewer> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: const Text('3D Character Viewer'),
+        title: const Text(
+          '3D Character Viewer',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 20),
+            child: TextButton.icon(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const MonsterView()),
+              ),
+              label: const Text("Don't Click Me"),
+              icon: const Icon(
+                Icons.warning_rounded,
+                color: Colors.red,
+                size: 40,
+              ),
+            ),
+          ),
+        ],
       ),
       floatingActionButton: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 16.0),
@@ -128,8 +194,8 @@ class CharacterViewerState extends State<CharacterViewer> {
               children: [
                 Expanded(
                   child: Flutter3DViewer(
-                    enableTouch: false,
-                    src: 'assets/models/female1.glb',
+                    enableTouch: true,
+                    src: 'assets/models/woman_combo.glb',
                     controller: _femaleController,
                     onLoad: (String modelAddress) {
                       _femaleController.setCameraOrbit(
@@ -140,15 +206,14 @@ class CharacterViewerState extends State<CharacterViewer> {
                       _femaleController.setCameraTarget(0.2, 0.8, 0);
                     },
                     onError: (String error) {
-                      debugPrint(
-                          'Error loading female character model: $error');
+                      debugPrint('Error loading female character model: $error');
                     },
                   ),
                 ),
                 Expanded(
                   child: Flutter3DViewer(
-                    enableTouch: false,
-                    src: 'assets/models/man_talk.glb',
+                    enableTouch: true,
+                    src: 'assets/models/man_combo.glb',
                     controller: _maleController,
                     onLoad: (String modelAddress) {
                       _maleController.setCameraOrbit(
@@ -156,7 +221,7 @@ class CharacterViewerState extends State<CharacterViewer> {
                         _initialCameraSettings['male']![1],
                         _initialCameraSettings['male']![2],
                       );
-                      _maleController.setCameraTarget(0.2, 0.8, 0.2);
+                      _maleController.setCameraTarget(0.2, 0.8, 0);
                     },
                     onError: (String error) {
                       debugPrint('Error loading male character model: $error');
@@ -168,13 +233,25 @@ class CharacterViewerState extends State<CharacterViewer> {
           ),
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            child: Column(
               children: [
-                ElevatedButton(
-                  onPressed: () => loadAndPlayAnimation(_currentController),
-                  child: Text(
-                      'Play ${_isFemaleSelected ? "Female" : "Male"} Animation'),
+                // Individual animations
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    _buildAnimationButton('Talk', 'talk'),
+                    _buildAnimationButton('Fight', 'fight'),
+                    _buildAnimationButton('Jump', 'jump'),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // Dual animations
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    _buildDualAnimationButton('Converse', 'talk', Colors.green),
+                    _buildDualAnimationButton('Fight', 'fight', Colors.red),
+                  ],
                 ),
               ],
             ),

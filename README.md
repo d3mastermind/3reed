@@ -1,4 +1,4 @@
-# 3D Character Viewer
+# 3reeD Character Viewer
 
 3reed is a Flutter application that demonstrates interactive 3D character visualization with animated models. This project combines ReadyPlayer.me avatars with Mixamo animations to create an engaging 3D character viewing experience.
 

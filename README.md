@@ -4,7 +4,7 @@
 
 ## Live Preview
 
-<iframe src="https://appetize.io/embed/b_d6uavy76zba64e5vzfxplachlu" width="378" height="800" frameborder="0" scrolling="no"></iframe>
+[View Live Demo on Appetize.io](https://appetize.io/embed/b_d6uavy76zba64e5vzfxplachlu)
 
 ## Demo
 

@@ -2,6 +2,20 @@
 
 3reed is a Flutter application that demonstrates interactive 3D character visualization with animated models. This project combines ReadyPlayer.me avatars with Mixamo animations to create an engaging 3D character viewing experience.
 
+## Live Preview
+
+<iframe src="https://appetize.io/embed/b_d6uavy76zba64e5vzfxplachlu" width="378" height="800" frameborder="0" scrolling="no"></iframe>
+
+## Demo
+
+![Demo Preview](https://github.com/d3mastermind/3reed/blob/main/Media/threed.gif)
+
+For a full video demonstration, check out our [detailed walkthrough](https://github.com/d3mastermind/3reed/blob/main/Media/threed.mp4).
+
+## Download
+
+[![Download APK](https://img.shields.io/badge/Download-APK-green.svg)](https://github.com/d3mastermind/3reed/blob/3c4d8bfaa41042071c3906df6df8cf7544774c34/APK/app-release.apk)
+
 ## Features
 
 - Display of both male and female 3D characters simultaneously
